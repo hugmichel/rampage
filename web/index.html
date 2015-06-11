@@ -21,7 +21,7 @@
     game.load.image('sky', 'assets/sky.png');
     game.load.image('ground', 'assets/platform.png');
     game.load.image('star', 'assets/star.png');
-    game.load.spritesheet('george', 'assets/Imported_piskel.png', 104, 130);
+    game.load.spritesheet('george', 'assets/rampage.png', 114, 135);
     game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
 
   }
@@ -32,12 +32,30 @@
   var cursors;
   var georgeSprite = {
     STAND: 0,
-    STAND_SIDE: 1,
-    STAND_UP: 2,
+    STAND_SIDE: 3,
+    STAND_UP: 4,
     STAND_DOWN: 3,
-    STRIKE_SIDE: 4,
-    STRIKE_UP: 5,
-    STRIKE_DOWN: 6
+    STRIKE_SIDE: 8,
+    STRIKE_UP: 7,
+    STRIKE_DOWN: 9,
+    EAT: 10,
+    WALK: [1, 2],
+    JUMP_SIDE: 17,
+    JUMP_UP: 19,
+    JUMP_DOWN: 21,
+    JUMP_OTHER_SIDE: 23,
+    JUMP_SIDE_STRIKE: 18,
+    JUMP_UP_STRIKE: 20,
+    JUMP_DOWN_STRIKE: 22,
+    JUMP_OTHER_SIDE_STRIKE: 24,
+    FALL_FEAR: 25,
+    FALL_LONG: 26,
+    addAnimations: function(animations){
+//      animations.add()
+    },
+    playAnimation: function(){
+
+    }
   };
 
   var stars;
@@ -48,6 +66,7 @@
 
     cursors = game.input.keyboard.createCursorKeys();
     cursors.spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    cursors.jump = game.input.keyboard.addKey(Phaser.Keyboard.X);
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.add.sprite(0, 0, 'sky');
@@ -70,15 +89,11 @@
     player = game.add.sprite(104, game.world.height - 200, 'george');
     game.physics.arcade.enable(player);
 
-    player.body.bounce.y = 0.2;
+//    player.body.bounce.y = 0.2;
     player.body.gravity.y = 1000;
     player.body.collideWorldBounds = true;
     player.anchor.x = 0.5;
-    player.animations.add('move', [ 7, 8], 10, true);
-    player.animations.add('right', [ 2, 3], 10, true);
-    player.animations.add('jump', [ 2, 3], 10, true);
-    player.animations.add('lookup', [ 5], 10, true);
-    player.animations.add('lookdown', [ 6], 10, true);
+    player.animations.add('move', georgeSprite.WALK, 10, true);
 
 
     stars = game.add.group();
@@ -164,6 +179,7 @@
         player.frame = georgeSprite.STAND_UP;
 
       }
+
       if(cursors.spacebar.isDown) {
         player.frame = georgeSprite.STRIKE_SIDE;
         if (cursors.down.isDown) {
@@ -179,8 +195,28 @@
 
 
       //  Allow the player to jump if they are touching the ground.
-      if (cursors.spacebar.isDown && player.body.touching.down) {
-//        player.body.velocity.y = -350;
+      if (cursors.jump.isDown && player.body.touching.down) {
+        player.body.velocity.y = -350;
+      }
+      if(!player.body.touching.down) {
+        player.frame = georgeSprite.JUMP_SIDE;
+        if(cursors.spacebar.isDown){
+          player.frame = georgeSprite.JUMP_SIDE_STRIKE;
+        }
+        if (cursors.down.isDown) {
+          player.animations.stop();
+          player.frame = georgeSprite.JUMP_DOWN;
+          if(cursors.spacebar.isDown){
+            player.frame = georgeSprite.JUMP_DOWN_STRIKE;
+          }
+        }
+        else if (cursors.up.isDown) {
+          player.animations.stop();
+          player.frame = georgeSprite.JUMP_UP;
+          if(cursors.spacebar.isDown){
+            player.frame = georgeSprite.JUMP_UP_STRIKE;
+          }
+        }
       }
     }
 
