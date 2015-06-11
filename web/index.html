@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <title>Phaser - Making your first game, part 9</title>
-  <script type="text/javascript" src="/js/phaser.min.js"></script>
+  <script type="text/javascript" src="/js/phaser.js"></script>
   <style type="text/css">
     body {
       margin: 0;
@@ -27,6 +27,7 @@
   }
 
   var player;
+  var playerGroup;
   var platforms;
   var buildings;
   var cursors;
@@ -50,10 +51,10 @@
     JUMP_OTHER_SIDE_STRIKE: 24,
     FALL_FEAR: 25,
     FALL_LONG: 26,
-    addAnimations: function(animations){
+    addAnimations: function (animations) {
 //      animations.add()
     },
-    playAnimation: function(){
+    playAnimation: function () {
 
     }
   };
@@ -61,6 +62,7 @@
   var stars;
   var score = 0;
   var scoreText;
+  var _star = null;
 
   function create() {
 
@@ -80,21 +82,37 @@
 
     buildings = game.add.group();
     buildings.enableBody = true;
-    var ledge = buildings.create(100, game.world.height - 264, 'ground');
-    ledge.height = 200;
-    ledge.width = 50;
-    ledge.body.immovable = true;
 
+//    var buildingGroup = game.add.group(buildings);
+//    buildingGroup.enableBody = true;
+//    var buildingBackground = buildingGroup.create(100, game.world.height - 264, 'ground');
+//    buildingBackground.height = 200;
+//    buildingBackground.width = 50;
+//    buildingBackground.body.immovable = true;
+    for (var x = 0; x < 2; x++) {
+      for (var y = 0; y < 5; y++) {
+        var buildingPart = buildings.create(100 + (10 * x) + (50 * x), game.world.height - 64 - (10 * y) - (50 * y), 'ground');
+        buildingPart.height = 50;
+        buildingPart.width = 50;
+        buildingPart.body.gravity.y = 200;
+//        buildingPart.body.immovable = true;
+      }
+    }
+    game.physics.arcade.enable(buildings);
 
-    player = game.add.sprite(104, game.world.height - 200, 'george');
+    playerGroup = game.add.group();
+    playerGroup.enableBody = true;
+
+    player = game.add.sprite(500, game.world.height - 200, 'george');
     game.physics.arcade.enable(player);
-
-//    player.body.bounce.y = 0.2;
     player.body.gravity.y = 1000;
     player.body.collideWorldBounds = true;
     player.anchor.x = 0.5;
     player.animations.add('move', georgeSprite.WALK, 10, true);
 
+
+    _star = playerGroup.create(104 + 80, game.world.height - 200 - 80, 'star');
+//    _star.body.immovable = true;
 
     stars = game.add.group();
     stars.enableBody = true;
@@ -109,13 +127,23 @@
   }
 
   function update() {
+    game.debug.body(player);
+    _star.x =
+            player.x + 35;
+    _star.y = player.y + 55;
 
     //  Collide the player and the stars with the platforms
+    game.physics.arcade.collide(buildings, buildings);
+    game.physics.arcade.collide(buildings, buildings);
     game.physics.arcade.collide(player, platforms);
     game.physics.arcade.collide(stars, platforms);
+    game.physics.arcade.collide(buildings, platforms);
+
     game.physics.arcade.overlap(player, stars, collectStar, null, this);
     player.isBuildingSnapped = false;
+
     game.physics.arcade.overlap(player, buildings, playerSnapBuilding, null, this);
+
 
     player.body.velocity.x = 0;
     player.body.allowGravity = true;
@@ -149,19 +177,35 @@
       }
 
       if (cursors.spacebar.isDown) {
-        player.buildingSnapped.x += 50;
+        console.log('spacebar');
+        game.physics.arcade.overlap(_star, buildings, function (star, building) {
+          console.log('overlap');
+          building.tint -= 0x111111;
+          if (building.tint < 0x111111) {
+            building.tint = 0;
+//          building.parent.setAll('body.velocity.y', 50);
+          }
+        }, null, this);
+
+//        player.buildingSnapped.tint -= 0x111111;
+//        if (player.buildingSnapped.tint < 0x111111) {
+//          console.log(player.buildingSnapped);
+//          player.buildingSnapped.tint = 0;
+////          player.buildingSnapped.parent.setAll('body.velocity.y', 50);
+//        }
+
       }
 
     }
     else {
 
       if (cursors.left.isDown) {
-        player.body.velocity.x = -150;
+        player.body.velocity.x = -250;
         player.animations.play('move');
         player.scale.x = -1;
       }
       else if (cursors.right.isDown) {
-        player.body.velocity.x = 150;
+        player.body.velocity.x = 250;
         player.animations.play('move');
         player.scale.x = 1;
       }
@@ -180,7 +224,7 @@
 
       }
 
-      if(cursors.spacebar.isDown) {
+      if (cursors.spacebar.isDown) {
         player.frame = georgeSprite.STRIKE_SIDE;
         if (cursors.down.isDown) {
           player.animations.stop();
@@ -198,22 +242,22 @@
       if (cursors.jump.isDown && player.body.touching.down) {
         player.body.velocity.y = -350;
       }
-      if(!player.body.touching.down) {
+      if (!player.body.touching.down) {
         player.frame = georgeSprite.JUMP_SIDE;
-        if(cursors.spacebar.isDown){
+        if (cursors.spacebar.isDown) {
           player.frame = georgeSprite.JUMP_SIDE_STRIKE;
         }
         if (cursors.down.isDown) {
           player.animations.stop();
           player.frame = georgeSprite.JUMP_DOWN;
-          if(cursors.spacebar.isDown){
+          if (cursors.spacebar.isDown) {
             player.frame = georgeSprite.JUMP_DOWN_STRIKE;
           }
         }
         else if (cursors.up.isDown) {
           player.animations.stop();
           player.frame = georgeSprite.JUMP_UP;
-          if(cursors.spacebar.isDown){
+          if (cursors.spacebar.isDown) {
             player.frame = georgeSprite.JUMP_UP_STRIKE;
           }
         }
@@ -233,7 +277,7 @@
 
   }
 
-  function playerSnapBuilding(player, building) {
+  function playerSnapBuilding(_star, building) {
     player.isBuildingSnapped = true;
     player.buildingSnapped = building;
 
