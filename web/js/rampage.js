@@ -91,7 +91,12 @@ Rampage.Player.prototype = {
     this.isStriking = false;
     this.isJumping = false;
     this.buildingSnappeds = [];
-    game.physics.arcade.overlap(this.sprite, buildings[0].buildingGroup, this.playerSnapBuilding, null, this);
+    for (var i = 0; i < buildings.length; i++) {
+      game.physics.arcade.overlap(this.sprite, buildings[i].buildingGroup, this.playerSnapBuilding, null, this);
+      //if (this.isBuildingSnapped) {
+      //  break;
+      //}
+    }
 //      if(this.sprite.body.velocity.y != 0)
 
     this.sprite.body.velocity.x = 0;
@@ -236,14 +241,11 @@ Rampage.Game.prototype = {
     ground.scale.setTo(2, 2);
     ground.body.immovable = true;
 
-    this.buildings.push(new Rampage.Building());
-    this.players.push(new Rampage.Player());
-    for (var i = 0; i < this.buildings.length; i++) {
-      this.buildings[i].create(this.game, 100, this.game.world.height - 64, 2, 5);
+
+    for(var i =0; i<3;  i++) {
+      this.addBuilding(100 + i*200, 2 + i);
     }
-    for (var i = 0; i < this.players.length; i++) {
-      this.players[i].create(this.game, 200, this.game.world.height - 200);
-    }
+    this.addPlayer();
   },
   update: function () {
     this.game.physics.arcade.collide(this.players[0].sprite, this.platforms);
@@ -256,6 +258,15 @@ Rampage.Game.prototype = {
     for (var i = 0; i < this.players.length; i++) {
       this.players[i].update(this.game, this.cursors, this.buildings);
     }
-
+  },
+  addPlayer: function(){
+    var player = new Rampage.Player();
+    player.create(this.game, 200, this.game.world.height - 200);
+    this.players.push(player);
+  },
+  addBuilding: function(x, height){
+    var building = new Rampage.Building();
+    building.create(this.game, x, this.game.world.height - 64 - 50, 2, height);
+    this.buildings.push(building);
   }
 };

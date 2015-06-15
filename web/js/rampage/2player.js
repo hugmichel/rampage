@@ -53,7 +53,12 @@ Rampage.Player.prototype = {
     this.isStriking = false;
     this.isJumping = false;
     this.buildingSnappeds = [];
-    game.physics.arcade.overlap(this.sprite, buildings[0].buildingGroup, this.playerSnapBuilding, null, this);
+    for (var i = 0; i < buildings.length; i++) {
+      game.physics.arcade.overlap(this.sprite, buildings[i].buildingGroup, this.playerSnapBuilding, null, this);
+      //if (this.isBuildingSnapped) {
+      //  break;
+      //}
+    }
 //      if(this.sprite.body.velocity.y != 0)
 
     this.sprite.body.velocity.x = 0;

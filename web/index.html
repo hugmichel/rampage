@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <title>Phaser - Making your first game, part 9</title>
-  <script type="text/javascript" src="/js/lib/libphaser.js"></script>
+  <script type="text/javascript" src="/js/lib/phaser.js"></script>
 
   <style type="text/css">
     body {
@@ -21,7 +21,8 @@
                              {
                                preload: rampageGame.preload.bind(rampageGame),
                                create: rampageGame.create.bind(rampageGame),
-                               update: rampageGame.update.bind(rampageGame)
+                               update: rampageGame.update.bind(rampageGame),
+                               enableDebug: true
                              });
   rampageGame.game = game;
 
