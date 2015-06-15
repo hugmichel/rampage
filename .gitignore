@@ -1,2 +1,3 @@
 /lib
-.idea
+/.idea
+/node_modules
