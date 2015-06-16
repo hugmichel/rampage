@@ -13,18 +13,20 @@ Rampage.Player.prototype = {
   isBuildingSnapped: false,
 
   jump: function () {
-
+    this.sprite.body.velocity.y = -350;
   },
   strike: function (buildings) {
     this.isStriking = true;
-    game.physics.arcade.overlap(this.strikePoint, buildings, function (star, building) {
-      building.tint -= 0x111111;
-      if (building.tint < 0x111111) {
-        building.tint = 0;
+    var hitBuilding = false;
+    for (var i = 0; i < buildings.length; i++) {
+      game.physics.arcade.overlap(this.strikePoint, buildings[i].buildingGroup, function (strikePoint, building) {
+        hitBuilding = true;
+        buildings[i].onStrike();
+      }, null, this);
+      if (hitBuilding) {
+        break;
       }
-    }, null, this);
-
-
+    }
   },
   move: function (direction, scale) {
     this.sprite.body.velocity.x = direction;
@@ -34,7 +36,9 @@ Rampage.Player.prototype = {
   create: function (game, x, y) {
     this.sprite = game.add.sprite(x, y, 'george');
     this.sprite.anchor.x = 0.5;
-    this.sprite.animations.add('move', georgeSprite.WALK, 10, true);
+    this.sprite.animations.add('move', Rampage.Player.spritesheetMap.WALK, 10, true);
+    this.sprite.animations.add('climb_up', Rampage.Player.spritesheetMap.CLIMB_UP, 10, true);
+    this.sprite.animations.add('climb_down', Rampage.Player.spritesheetMap.CLIMB_DOWN, 10, true);
 
     game.physics.arcade.enable(this.sprite);
     this.sprite.body.gravity.y = 1000;
@@ -44,7 +48,8 @@ Rampage.Player.prototype = {
     this.playerGroup.enableBody = true;
     this.strikePoint = this.playerGroup.create(x + 80, y - 80, 'star');
   },
-  update: function (game, cursors, buildings) {
+  update: function (game, cursors, buildings, platforms) {
+    game.physics.arcade.collide(this.sprite, platforms);
     game.debug.body(this.sprite);
     this.strikePoint.x = this.sprite.x + 35;
     this.strikePoint.y = this.sprite.y + 55;
@@ -72,7 +77,7 @@ Rampage.Player.prototype = {
     }
 
     if (cursors.spacebar.isDown) {
-      this.strike(buildings[0].buildingGroup);
+      this.strike(buildings);
     }
 
     var action = 'STAND';
@@ -85,7 +90,6 @@ Rampage.Player.prototype = {
       var notOnRoof = true;
       for (var i = 0; i < this.buildingSnappeds.length; i++) {
         var SpriteAboveBuildingOffset = (this.sprite.y + this.sprite.height) - this.buildingSnappeds[i].y;
-        console.log(SpriteAboveBuildingOffset);
         if (SpriteAboveBuildingOffset < 5) {
           notOnRoof = false;
         }
@@ -117,32 +121,43 @@ Rampage.Player.prototype = {
 
     }
 
-
     if (controlMode == 'ground') {
-
       //  Allow the this.sprite to jump if they are touching the ground.
       if (cursors.jump.isDown && (this.sprite.body.touching.down || isOnRoof)) {
-        this.sprite.body.velocity.y = -350;
+        this.jump();
       }
-      if (cursors.down.isDown) {
-        lookDirection = 'DOWN';
-      }
-      else if (cursors.up.isDown) {
-        lookDirection = 'UP';
-      }
+
       if (!this.sprite.body.touching.down && !isOnRoof) {
         action = 'JUMP';
       }
     }
+
+    if (cursors.down.isDown) {
+      lookDirection = 'DOWN';
+    }
+    else if (cursors.up.isDown) {
+      lookDirection = 'UP';
+    }
+
     var frame = action + '_' + lookDirection;
     if (this.isStriking) {
       frame += '_STRIKE';
     }
-    this.frame(georgeSprite[frame]);
+    if(frame == 'STAND_SIDE' && this.sprite.body.velocity.x != 0) {
+      frame = 'MOVE';
+    }
+    console.log(frame);
+    this.frame(Rampage.Player.spritesheetMap[frame]);
   },
   frame: function (frame) {
-    if (frame == georgeSprite.MOVE) {
+    if (frame == Rampage.Player.spritesheetMap.MOVE) {
       this.sprite.animations.play('move');
+    }
+    else if (frame == Rampage.Player.spritesheetMap.CLIMB_DOWN) {
+      this.sprite.animations.play('climb_down');
+    }
+    else if (frame == Rampage.Player.spritesheetMap.CLIMB_UP) {
+      this.sprite.animations.play('climb_up');
     }
     else {
       this.sprite.animations.stop();            // -- add one player
@@ -159,7 +174,36 @@ Rampage.Player.prototype = {
   }
 
 };
+Rampage.Player.spritesheetMap = {
+  STAND: 0,
+  WALK: [1, 2],
+  STAND_SIDE: 3,
+  STAND_UP: 4,
+  STAND_DOWN: 3,
+  STAND_SIDE_STRIKE: 8,
+  STAND_UP_STRIKE: 7,
+  STAND_DOWN_STRIKE: 9,
+  EAT: 10,
+  JUMP_SIDE: 17,
+  JUMP_UP: 19,
+  JUMP_DOWN: 21,
+  JUMP_OTHER_SIDE: 23,
+  JUMP_SIDE_STRIKE: 18,
+  JUMP_UP_STRIKE: 20,
+  JUMP_DOWN_STRIKE: 22,
+  JUMP_OTHER_SIDE_STRIKE: 24,
+  CLIMB_SIDE: 42,
+  CLIMB_UP: [39, 40],
+  CLIMB_DOWN: [36, 37],
+  CLIMB_SIDE_STRIKE: 34,
+  CLIMB_UP_STRIKE: 38,
+  CLIMB_DOWN_STRIKE: 35,
+  CLIMB_REVERSE_STRIKE: 33,
+  FALL_FEAR: 25,
+  FALL_LONG: 26,
+  MOVE: 123
+};
 Rampage.Player.preload = function () {
-  game.load.spritesheet('george', 'assets/rampage.png', 114, 135);
+  game.load.spritesheet('george', 'assets/george.png', 114, 135);
   game.load.image('star', 'assets/star.png');
 };

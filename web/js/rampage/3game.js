@@ -17,6 +17,7 @@ Rampage.Game.prototype = {
   preload: function () {
     this.game.load.image('sky', 'assets/sky.png');
     this.game.load.image('ground', 'assets/platform.png');
+    this.game.load.spritesheet('building', 'assets/building.png', 64,64, 2);
     Rampage.Player.preload();
 
     this.game.load.image('star', 'assets/star.png');
@@ -45,15 +46,11 @@ Rampage.Game.prototype = {
     this.addPlayer();
   },
   update: function () {
-    this.game.physics.arcade.collide(this.players[0].sprite, this.platforms);
-//      this.game.physics.arcade.collide(this.buildings, this.buildings);
-
     for (var i = 0; i < this.buildings.length; i++) {
-      this.buildings[i].update(this.game);
-      this.game.physics.arcade.collide(this.buildings[i].buildingGroup, this.platforms);
+      this.buildings[i].update(this.game, this.platforms);
     }
     for (var i = 0; i < this.players.length; i++) {
-      this.players[i].update(this.game, this.cursors, this.buildings);
+      this.players[i].update(this.game, this.cursors, this.buildings, this.platforms);
     }
   },
   addPlayer: function(){
@@ -62,8 +59,8 @@ Rampage.Game.prototype = {
     this.players.push(player);
   },
   addBuilding: function(x, height){
-    var building = new Rampage.Building();
-    building.create(this.game, x, this.game.world.height - 64 - 50, 2, height);
+    var building = new Rampage.Building(1);
+    building.create(this.game, x, this.game.world.height - 64, 2, height);
     this.buildings.push(building);
   }
 };

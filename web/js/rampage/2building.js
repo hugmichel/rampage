@@ -1,8 +1,15 @@
-Rampage.Building = function () {
-
+Rampage.Building = function (totalHitPoints) {
+  this.totalHitPoints = totalHitPoints | 0;
+  this.hitPoints = this.totalHitPoints;
 };
 Rampage.Building.prototype = {
   buildingGroup: null,
+  PART_HEIGHT: 64,
+  PART_WIDTH: 64,
+
+  hitPoints: 0,
+  totalHitPoints: 0,
+
   create: function (game, xRoot, yRoot, width, height) {
 
     // -- buildings
@@ -11,27 +18,27 @@ Rampage.Building.prototype = {
 
     for (var x = 0; x < width; x++) {
       for (var y = 0; y < height; y++) {
-        var buildingPart = this.buildingGroup.create(xRoot + (50 * x),
-                                                     yRoot - (50 * y),
-                                                     'ground');
-        buildingPart.height = 50;
-        buildingPart.width = 50;
+        var buildingPart = this.buildingGroup.create(xRoot + (this.PART_WIDTH * x),
+                                                     yRoot - (this.PART_HEIGHT * (y + 1)),
+                                                     'building',
+                                                     y == 0 ? 2 : 1);
+        buildingPart.width = this.PART_WIDTH;
+        buildingPart.height = this.PART_HEIGHT;
         buildingPart.body.gravity.y = 100;
       }
-//        var buildingPart = this.platforms.create(100 + (10 * x) + (50 * x),
-//                                                 this.game.world.height - 64 - (10 * y) - (50 * y),
-//                                                 'ground');
-//        buildingPart.height = 10;
-//        buildingPart.width = 50;
-//        buildingPart.body.gravity.y = 100;
-//        buildingPart.body.immovable = true;
-//        this.platforms.push(buildingPart);
+
     }
     game.physics.arcade.enable(this.buildingGroup);
-
   },
-  update: function (game) {
-
+  update: function (game, platforms) {
+    if (this.hitPoints > 0) {
+      game.physics.arcade.collide(this.buildingGroup, platforms);
+    }
     game.physics.arcade.collide(this.buildingGroup, this.buildingGroup);
+  },
+  onStrike: function(){
+    console.log('onStrike');
+    this.hitPoints = Math.max(this.hitPoints - 1, 0);
+    this.buildingGroup.tint = 0xFFFFFF * (this.hitPoints / this.totalHitPoints);
   }
 };
