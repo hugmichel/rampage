@@ -24,9 +24,8 @@ Rampage.Building.prototype = {
                                                      y == 0 ? 2 : 1);
         buildingPart.width = this.PART_WIDTH;
         buildingPart.height = this.PART_HEIGHT;
-        buildingPart.body.gravity.y = 100;
+        buildingPart.body.gravity.y = 200;
       }
-
     }
     game.physics.arcade.enable(this.buildingGroup);
   },
@@ -36,9 +35,12 @@ Rampage.Building.prototype = {
     }
     game.physics.arcade.collide(this.buildingGroup, this.buildingGroup);
   },
-  onStrike: function(){
-    console.log('onStrike');
+  onStrike: function () {
     this.hitPoints = Math.max(this.hitPoints - 1, 0);
     this.buildingGroup.tint = 0xFFFFFF * (this.hitPoints / this.totalHitPoints);
   }
+};
+
+Rampage.Building.preload = function (game) {
+  game.load.spritesheet('building', 'assets/building.png', 64, 64, 2);
 };

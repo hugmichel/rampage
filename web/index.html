@@ -15,20 +15,7 @@
 
 <script type="text/javascript" src="/js/rampage.js"></script>
 <script type="text/javascript">
-
-  var rampageGame = new Rampage.Game();
-  var game = new Phaser.Game(800, 600, Phaser.AUTO, '',
-                             {
-                               preload: rampageGame.preload.bind(rampageGame),
-                               create: rampageGame.create.bind(rampageGame),
-                               update: rampageGame.update.bind(rampageGame),
-                               enableDebug: true
-                             });
-  rampageGame.game = game;
-
-
-
-
+  var rampageGame = new Rampage.Game(window.innerWidth, window.innerHeight);
 </script>
 
 </body>
