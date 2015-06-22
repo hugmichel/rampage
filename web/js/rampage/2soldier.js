@@ -3,6 +3,7 @@ Rampage.Soldier = function () {
 };
 Rampage.Soldier.prototype = {
   sprite: null,
+  firingDelay: 0,
 
   //strike: function (game, buildings) {
   //  this.isStriking = true;
@@ -18,6 +19,14 @@ Rampage.Soldier.prototype = {
   //  }
   //},
   //},
+  fire: function(game, target) {
+    this.isFiring = true;
+    this.firingDelay = 100;
+    var bullet = game.add.sprite(this.sprite.x, this.sprite.y, 'bullet');
+    game.physics.arcade.enable(bullet);
+    bullet.body.velocity.x =  (target.x - this.sprite.x);
+    bullet.body.velocity.y =  (target.y - this.sprite.y);
+  },
   move: function (direction, scale) {
     this.sprite.body.velocity.x = direction;
     this.sprite.animations.play('move');
@@ -37,12 +46,21 @@ Rampage.Soldier.prototype = {
     game.debug.body(this.sprite);
 
     this.sprite.body.velocity.x = 0;
+    if (this.firingDelay> 0) {
+      this.firingDelay--;
+    }
 
-    var direction = players[0].sprite.x - this.sprite.x;
-    console.log(direction);
-    direction = direction / Math.abs(direction);
-    this.move(30 * direction, direction);
-
+    var distanceX = players[0].sprite.x - this.sprite.x;
+    var distanceXAbs = Math.abs(distanceX);
+    if (distanceXAbs > 100) {
+      distanceX = distanceX / Math.abs(distanceX);
+      this.move(30 * distanceX, distanceX);
+    }
+    else if (distanceXAbs <= 100 && distanceXAbs != 0) {
+      if(this.firingDelay == 0) {
+        this.fire(game, players[0].sprite);
+      }
+    }
 
 
     var action = 'STAND';
@@ -73,6 +91,7 @@ Rampage.Soldier.prototype = {
 
 Rampage.Soldier.preload = function (game) {
   game.load.spritesheet('soldier', 'assets/soldier.png', 32, 32);
+  game.load.image('bullet', 'assets/bullet.png', 2, 2);
 };
 
 Rampage.Soldier.spritesheetMap = {
