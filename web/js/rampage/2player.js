@@ -2,6 +2,7 @@ Rampage.Player = function () {
   this.isJumping = false;
   this.isStriking = false;
   this.isBuildingSnapped = false;
+  this.hitPoints = 10;
 };
 Rampage.Player.prototype = {
   sprite: null,
@@ -12,6 +13,9 @@ Rampage.Player.prototype = {
   isStriking: false,
   isBuildingSnapped: false,
 
+  onBulletHit: function(){
+    this.hitPoints--;
+  },
   jump: function () {
     this.sprite.body.velocity.y = -350;
   },

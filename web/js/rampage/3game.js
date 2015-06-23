@@ -2,6 +2,7 @@ Rampage.Game = function (width, height) {
   this.players = [];
   this.soldiers = [];
   this.buildings = [];
+  this.bullets = [];
 
   this.game = new Phaser.Game(width, height, Phaser.AUTO, '',
                              {
@@ -30,6 +31,7 @@ Rampage.Game.prototype = {
     Rampage.Player.preload(this.game);
     Rampage.Building.preload(this.game);
     Rampage.Soldier.preload(this.game);
+    Rampage.Bullet.preload(this.game);
   },
 
   create: function () {
@@ -68,7 +70,10 @@ Rampage.Game.prototype = {
       this.players[i].update(this.game, this.cursors, this.buildings, this.platforms);
     }
     for (var i = 0; i < this.soldiers.length; i++) {
-      this.soldiers[i].update(this.game, this.platforms, this.players);
+      this.soldiers[i].update(this, this.game, this.platforms, this.players);
+    }
+    for (var i = 0; i < this.bullets.length; i++) {
+      this.bullets[i].update(this, this.game, this.players);
     }
   },
   addPlayer: function(x){
@@ -85,5 +90,13 @@ Rampage.Game.prototype = {
     var soldier = new Rampage.Soldier();
     soldier.create(this.game, x, this.game.world.height - 110);
     this.soldiers.push(soldier);
+  },
+  addBullet: function(source, target){
+    var bullet = new Rampage.Bullet(this.game, source, target);
+    //bullet.create(this.game, x, this.game.world.height - 110);
+    this.bullets.push(bullet);
+  },
+  removeBullet: function(bullet){
+    delete this.bullets.splice(this.bullets.indexOf(bullet), 1);
   }
 };

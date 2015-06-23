@@ -4,28 +4,11 @@ Rampage.Soldier = function () {
 Rampage.Soldier.prototype = {
   sprite: null,
   firingDelay: 0,
+  MOVE_SPEED: 100,
 
-  //strike: function (game, buildings) {
-  //  this.isStriking = true;
-  //  var hitBuilding = false;
-  //  for (var i = 0; i < buildings.length; i++) {
-  //    game.physics.arcade.overlap(this.strikePoint, buildings[i].buildingGroup, function (strikePoint, building) {
-  //      hitBuilding = true;
-  //      buildings[i].onStrike();
-  //    }, null, this);
-  //    if (hitBuilding) {
-  //      break;
-  //    }
-  //  }
-  //},
-  //},
-  fire: function(game, target) {
-    this.isFiring = true;
+  fire: function(rampageGame, game, target) {
     this.firingDelay = 100;
-    var bullet = game.add.sprite(this.sprite.x, this.sprite.y, 'bullet');
-    game.physics.arcade.enable(bullet);
-    bullet.body.velocity.x =  (target.x - this.sprite.x);
-    bullet.body.velocity.y =  (target.y - this.sprite.y);
+    rampageGame.addBullet(this.sprite, target);
   },
   move: function (direction, scale) {
     this.sprite.body.velocity.x = direction;
@@ -41,7 +24,7 @@ Rampage.Soldier.prototype = {
     this.sprite.body.gravity.y = 100;
     this.sprite.body.collideWorldBounds = true;
   },
-  update: function (game, platforms, players) {
+  update: function (rampageGame, game, platforms, players) {
     game.physics.arcade.collide(this.sprite, platforms);
     game.debug.body(this.sprite);
 
@@ -54,11 +37,11 @@ Rampage.Soldier.prototype = {
     var distanceXAbs = Math.abs(distanceX);
     if (distanceXAbs > 100) {
       distanceX = distanceX / Math.abs(distanceX);
-      this.move(30 * distanceX, distanceX);
+      this.move(this.MOVE_SPEED * distanceX, distanceX);
     }
     else if (distanceXAbs <= 100 && distanceXAbs != 0) {
       if(this.firingDelay == 0) {
-        this.fire(game, players[0].sprite);
+        this.fire(rampageGame, game, players[0].sprite);
       }
     }
 
@@ -91,7 +74,6 @@ Rampage.Soldier.prototype = {
 
 Rampage.Soldier.preload = function (game) {
   game.load.spritesheet('soldier', 'assets/soldier.png', 32, 32);
-  game.load.image('bullet', 'assets/bullet.png', 2, 2);
 };
 
 Rampage.Soldier.spritesheetMap = {
