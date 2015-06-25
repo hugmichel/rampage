@@ -12,6 +12,7 @@ Rampage.Game = function (width, height) {
                                enableDebug: true
                              });
 };
+
 Rampage.Game.prototype = {
   game: null,
 
@@ -77,7 +78,7 @@ Rampage.Game.prototype = {
     }
   },
   addPlayer: function(x){
-    var player = new Rampage.Player();
+    var player = new Rampage.Player(this);
     player.create(this.game, x, this.game.world.height - 200);
     this.players.push(player);
   },

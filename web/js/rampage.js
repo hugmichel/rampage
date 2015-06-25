@@ -45,20 +45,63 @@ Rampage.Building.prototype = {
 Rampage.Building.preload = function (game) {
   game.load.spritesheet('building', 'assets/building.png', 64, 64, 2);
 };
-Rampage.Player = function () {
+Rampage.Bullet = function (game, source, target) {
+  this.hitPoints = 1;
+  this.sprite = game.add.sprite(source.x, source.y, 'bullet');
+
+  game.physics.arcade.enable(this.sprite);
+  this.sprite.body.velocity.x =  (target.x - source.x);
+  this.sprite.body.velocity.y =  (target.y - source.y);
+
+
+};
+Rampage.Bullet.prototype = {
+  sprite: null,
+  hitPoints: null,
+  update: function(rampageGame, game, players) {
+    for (var i = 0; i < players.length; i++) {
+      game.physics.arcade.overlap(this.sprite,
+                                  players[i].sprite,
+                                  function(player, thisSprite){
+                                    players[i].onBulletHit();
+                                    this.hitPoints--;
+                                  },
+                                  null, this);
+      if(this.hitPoints <= 0) {
+        rampageGame.removeBullet(this);
+        this.sprite.destroy(true);
+        break;
+      }
+    }
+  }
+};
+Rampage.Bullet.preload = function (game) {
+  game.load.image('bullet', 'assets/bullet.png', 2, 2);
+};
+Rampage.Player = function (rampageGame) {
+  this.rampageGame = rampageGame;
   this.isJumping = false;
   this.isStriking = false;
+  this.isClimbing = false;
   this.isBuildingSnapped = false;
+  this.hitPoints = 10;
+  this.state = 'none';
 };
 Rampage.Player.prototype = {
+  rampageGame: null,
   sprite: null,
   playerGroup: null,
   strikePoint: null,
 
+  state: 'none',
   isJumping: false,
+  isClimbing: false,
   isStriking: false,
   isBuildingSnapped: false,
 
+  onBulletHit: function () {
+    this.hitPoints--;
+  },
   jump: function () {
     this.sprite.body.velocity.y = -350;
   },
@@ -95,40 +138,117 @@ Rampage.Player.prototype = {
     this.playerGroup.enableBody = true;
     this.strikePoint = this.playerGroup.create(x + 80, y - 80, 'star');
   },
-  update: function (game, cursors, buildings, platforms) {
-    game.physics.arcade.collide(this.sprite, platforms);
-    game.debug.body(this.sprite);
-    this.strikePoint.x = this.sprite.x + 35;
-    this.strikePoint.y = this.sprite.y + 55;
+  states: {
+    /**
+     * @state : climbing
+     * TODO : check if climbing
+     * TODO : gravity disabled
+     * TODO : can move up/down
+     * TODO : can strike 4 ways
+     * TODO : can jump "out"
+     */
+    climbing: function () {
+      this.sprite.body.allowGravity = false;
+      this.sprite.body.velocity.y = 0;
 
-    this.isBuildingSnapped = false;
-    this.isStriking = false;
-    this.isJumping = false;
+      if (this.sprite.body.touching.down) {
+        this.sprite.body.allowGravity = true;
+        return this.state = 'none';
+      }
+
+      if (this.rampageGame.cursors.up.isDown && !this.isOnRoof()) {
+        this.sprite.body.velocity.y = -300;
+      }
+      else if (this.rampageGame.cursors.down.isDown) {
+        this.sprite.body.velocity.y = 300;
+      }
+      if (this.rampageGame.cursors.spacebar.isDown) {
+        this.strike(this.rampageGame.game, this.rampageGame.buildings);
+      }
+      //action = 'CLIMB';
+      //if (isOnRoof) {
+      //  action = 'STAND';
+      //  controlMode = 'ground';
+      //}
+    },
+    /**
+     * @state : jumping
+     * TODO : check if jumping anymore : touch ground or roof => state = "none"
+     * TODO : can strike
+     * TODO : can look up/down/reverse side
+     * TODO : when jumping, x speed is decreasing (can control x speed with inputs but less than on ground)
+     * TODO : can climb : must overlap building ladder, and jump input. Control : if ladder is not behind an other building. x speed set to 0.
+     **/
+    jumping: function () {
+
+      if (this.isOnRoof() || this.sprite.body.touching.down) {
+        this.state = 'none';
+        return;
+      }
+
+      if (this.rampageGame.cursors.spacebar.isDown) {
+        this.strike(this.rampageGame.game, this.rampageGame.buildings);
+      }
+      if (this.rampageGame.cursors.left.isDown) {
+        this.move(-20, -1);
+      }
+      else if (this.rampageGame.cursors.right.isDown) {
+        this.move(20, 1);
+      }
+
+    },
+    /**
+     * TODO : check if striking anymore
+     */
+    striking: function () {
+
+    },
+    /**
+     * @state : none
+     * TODO : check if touching roof, stopGravity
+     * TODO : can move left/right
+     * TODO : can strike ahead/down/up
+     * TODO : can jump
+     * TODO : can climb : must overlap building ladder, only up if on ground, only down if on roof
+     */
+    none: function () {
+
+      this.sprite.body.velocity.x = 0;
+      this.sprite.body.allowGravity = !this.isOnRoof();
+
+      if (this.rampageGame.cursors.spacebar.isDown) {
+        this.strike(this.rampageGame.game, this.rampageGame.buildings);
+      }
+      if (this.rampageGame.cursors.left.isDown) {
+        this.move(-300, -1);
+      }
+      else if (this.rampageGame.cursors.right.isDown) {
+        this.move(300, 1);
+      }
+      if (this.rampageGame.cursors.jump.isDown) {
+        this.jump();
+      }
+      if (this.rampageGame.cursors.up.down && this.isOnRoof()) {
+        this.isBuildingSnapped = true;
+      }
+    }
+  },
+  querySnappedBuildings: function () {
     this.buildingSnappeds = [];
-    for (var i = 0; i < buildings.length; i++) {
-      game.physics.arcade.overlap(this.sprite, buildings[i].buildingGroup, this.playerSnapBuilding, null, this);
+    for (var i = 0; i < this.rampageGame.buildings.length; i++) {
+      this.rampageGame.game.physics.arcade.overlap(this.sprite,
+                                                   this.rampageGame.buildings[i].buildingGroup,
+                                                   function (player, building) {
+                                                     //this.isBuildingSnapped = true;
+                                                     this.buildingSnappeds.push(building);
+                                                   }.bind(this),
+                                                   null,
+                                                   this);
     }
-
-    this.sprite.body.velocity.x = 0;
-    this.sprite.body.allowGravity = true;
-
-    if (cursors.left.isDown) {
-      this.move(-300, -1);
-    }
-    else if (cursors.right.isDown) {
-      this.move(300, 1);
-    }
-
-    if (cursors.spacebar.isDown) {
-      this.strike(game, buildings);
-    }
-
-    var action = 'STAND';
-    var lookDirection = 'SIDE';
-
-    var controlMode = 'ground';
+  },
+  isOnRoof: function () {
     var isOnRoof = false;
-
+    this.querySnappedBuildings();
     if (this.buildingSnappeds.length == 2) {
       var notOnRoof = true;
       for (var i = 0; i < this.buildingSnappeds.length; i++) {
@@ -141,52 +261,36 @@ Rampage.Player.prototype = {
         isOnRoof = true;
       }
     }
+    return isOnRoof;
+  },
+  update: function () {
+    this.rampageGame.game.physics.arcade.collide(this.sprite, this.rampageGame.platforms);
+    this.rampageGame.game.debug.body(this.sprite);
+    this.strikePoint.x = this.sprite.x + 35;
+    this.strikePoint.y = this.sprite.y + 55;
 
-    if (this.isBuildingSnapped) {
-      controlMode = 'buildingSnapped';
-    }
-    if (controlMode == 'buildingSnapped' || isOnRoof) {
-      this.sprite.body.allowGravity = false;
-      this.sprite.body.velocity.y = 0;
-      if (cursors.up.isDown && !isOnRoof) {
-        this.sprite.body.velocity.y = -300;
-      }
-      else if (cursors.down.isDown) {
-        this.sprite.body.velocity.y = 300;
-      }
-      action = 'CLIMB';
-      if (isOnRoof) {
-        action = 'STAND';
-        controlMode = 'ground';
-      }
-    }
+    this.states[this.state]();
+    /*
+     var action = 'STAND';
+     var lookDirection = 'SIDE';
+     var controlMode = 'ground';
 
-    if (controlMode == 'ground') {
-      // Allow the this.sprite to jump if they are touching the ground
-      // or when they are on building roof.
-      if (cursors.jump.isDown && (this.sprite.body.touching.down || isOnRoof)) {
-        this.jump();
-      }
-      if (!this.sprite.body.touching.down && !isOnRoof) {
-        action = 'JUMP';
-      }
-    }
 
-    if (cursors.down.isDown) {
-      lookDirection = 'DOWN';
-    }
-    else if (cursors.up.isDown) {
-      lookDirection = 'UP';
-    }
+     if (this.rampageGame.cursors.down.isDown) {
+     lookDirection = 'DOWN';
+     }
+     else if (this.rampageGame.cursors.up.isDown) {
+     lookDirection = 'UP';
+     }
 
-    var frame = action + '_' + lookDirection;
-    if (this.isStriking) {
-      frame += '_STRIKE';
-    }
-    if (frame == 'STAND_SIDE' && this.sprite.body.velocity.x != 0) {
-      frame = 'MOVE';
-    }
-    this.frame(Rampage.Player.spritesheetMap[frame]);
+     var frame = action + '_' + lookDirection;
+     if (this.isStriking) {
+     frame += '_STRIKE';
+     }
+     if (frame == 'STAND_SIDE' && this.sprite.body.velocity.x != 0) {
+     frame = 'MOVE';
+     }
+     this.frame(Rampage.Player.spritesheetMap[frame]);*/
   },
   frame: function (frame) {
     if (frame == Rampage.Player.spritesheetMap.MOVE) {
@@ -202,10 +306,6 @@ Rampage.Player.prototype = {
       this.sprite.animations.stop();
       this.sprite.frame = frame;
     }
-  },
-  playerSnapBuilding: function (player, building) {
-    this.isBuildingSnapped = true;
-    this.buildingSnappeds.push(building);
   }
 };
 
@@ -249,28 +349,11 @@ Rampage.Soldier = function () {
 Rampage.Soldier.prototype = {
   sprite: null,
   firingDelay: 0,
+  MOVE_SPEED: 100,
 
-  //strike: function (game, buildings) {
-  //  this.isStriking = true;
-  //  var hitBuilding = false;
-  //  for (var i = 0; i < buildings.length; i++) {
-  //    game.physics.arcade.overlap(this.strikePoint, buildings[i].buildingGroup, function (strikePoint, building) {
-  //      hitBuilding = true;
-  //      buildings[i].onStrike();
-  //    }, null, this);
-  //    if (hitBuilding) {
-  //      break;
-  //    }
-  //  }
-  //},
-  //},
-  fire: function(game, target) {
-    this.isFiring = true;
+  fire: function(rampageGame, game, target) {
     this.firingDelay = 100;
-    var bullet = game.add.sprite(this.sprite.x, this.sprite.y, 'bullet');
-    game.physics.arcade.enable(bullet);
-    bullet.body.velocity.x =  (target.x - this.sprite.x);
-    bullet.body.velocity.y =  (target.y - this.sprite.y);
+    rampageGame.addBullet(this.sprite, target);
   },
   move: function (direction, scale) {
     this.sprite.body.velocity.x = direction;
@@ -286,7 +369,7 @@ Rampage.Soldier.prototype = {
     this.sprite.body.gravity.y = 100;
     this.sprite.body.collideWorldBounds = true;
   },
-  update: function (game, platforms, players) {
+  update: function (rampageGame, game, platforms, players) {
     game.physics.arcade.collide(this.sprite, platforms);
     game.debug.body(this.sprite);
 
@@ -299,11 +382,11 @@ Rampage.Soldier.prototype = {
     var distanceXAbs = Math.abs(distanceX);
     if (distanceXAbs > 100) {
       distanceX = distanceX / Math.abs(distanceX);
-      this.move(30 * distanceX, distanceX);
+      this.move(this.MOVE_SPEED * distanceX, distanceX);
     }
     else if (distanceXAbs <= 100 && distanceXAbs != 0) {
       if(this.firingDelay == 0) {
-        this.fire(game, players[0].sprite);
+        this.fire(rampageGame, game, players[0].sprite);
       }
     }
 
@@ -336,7 +419,6 @@ Rampage.Soldier.prototype = {
 
 Rampage.Soldier.preload = function (game) {
   game.load.spritesheet('soldier', 'assets/soldier.png', 32, 32);
-  game.load.image('bullet', 'assets/bullet.png', 2, 2);
 };
 
 Rampage.Soldier.spritesheetMap = {
@@ -348,6 +430,7 @@ Rampage.Game = function (width, height) {
   this.players = [];
   this.soldiers = [];
   this.buildings = [];
+  this.bullets = [];
 
   this.game = new Phaser.Game(width, height, Phaser.AUTO, '',
                              {
@@ -357,6 +440,7 @@ Rampage.Game = function (width, height) {
                                enableDebug: true
                              });
 };
+
 Rampage.Game.prototype = {
   game: null,
 
@@ -376,6 +460,7 @@ Rampage.Game.prototype = {
     Rampage.Player.preload(this.game);
     Rampage.Building.preload(this.game);
     Rampage.Soldier.preload(this.game);
+    Rampage.Bullet.preload(this.game);
   },
 
   create: function () {
@@ -414,11 +499,14 @@ Rampage.Game.prototype = {
       this.players[i].update(this.game, this.cursors, this.buildings, this.platforms);
     }
     for (var i = 0; i < this.soldiers.length; i++) {
-      this.soldiers[i].update(this.game, this.platforms, this.players);
+      this.soldiers[i].update(this, this.game, this.platforms, this.players);
+    }
+    for (var i = 0; i < this.bullets.length; i++) {
+      this.bullets[i].update(this, this.game, this.players);
     }
   },
   addPlayer: function(x){
-    var player = new Rampage.Player();
+    var player = new Rampage.Player(this);
     player.create(this.game, x, this.game.world.height - 200);
     this.players.push(player);
   },
@@ -431,5 +519,13 @@ Rampage.Game.prototype = {
     var soldier = new Rampage.Soldier();
     soldier.create(this.game, x, this.game.world.height - 110);
     this.soldiers.push(soldier);
+  },
+  addBullet: function(source, target){
+    var bullet = new Rampage.Bullet(this.game, source, target);
+    //bullet.create(this.game, x, this.game.world.height - 110);
+    this.bullets.push(bullet);
+  },
+  removeBullet: function(bullet){
+    delete this.bullets.splice(this.bullets.indexOf(bullet), 1);
   }
 };
