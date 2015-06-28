@@ -134,9 +134,7 @@ Rampage.Player.prototype = {
    */
   moving: function () {
 
-    //this.sprite.body.velocity.x = 0;
     this.sprite.body.allowGravity = !this.isOnRoof();
-
 
     if (this.rampageGame.cursors.spacebar.isDown) {
       this.strike(this.rampageGame.game, this.rampageGame.buildings);
@@ -147,8 +145,11 @@ Rampage.Player.prototype = {
     else if (this.rampageGame.cursors.right.isDown) {
       this.move(10, true);
     }
+    else if(Math.abs(this.sprite.body.velocity.x) != 0){
+      this.sprite.body.velocity.x -= 15 * (Math.abs(this.sprite.body.velocity.x) / this.sprite.body.velocity.x);
+    }
     else {
-      this.sprite.body.velocity.x -= 10 * (Math.abs(this.sprite.body.velocity.x) / this.sprite.body.velocity.x);
+      this.sprite.body.velocity.x = 0;
     }
     if (this.rampageGame.cursors.jump.isDown) {
       this.sprite.body.allowGravity = true;
