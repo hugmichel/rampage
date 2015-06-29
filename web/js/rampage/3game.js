@@ -56,7 +56,7 @@ Rampage.Game.prototype = {
 
 
     for(var i =0; i<3;  i++) {
-      this.addBuilding(100 + i*200, 2 + i);
+      this.addBuilding(100 + i*200, 2 + (2 - i));
     }
     for (var i = 0; i < 1; i++) {
       this.addSoldier(400 + i * 100);
