@@ -1,40 +1,46 @@
 var Rampage = {};
-Rampage.Building = function (totalHitPoints) {
+Rampage.Building = function (rampageGame, totalHitPoints) {
   this.totalHitPoints = totalHitPoints | 0;
   this.hitPoints = this.totalHitPoints;
+  this.rampageGame = rampageGame;
+  this.roof = rampageGame;
 };
 Rampage.Building.prototype = {
   buildingGroup: null,
+  ladderLeft: null,
+  roof: null,
   PART_HEIGHT: 64,
   PART_WIDTH: 64,
+  ROOF_HEIGHT: 5,
 
   hitPoints: 0,
   totalHitPoints: 0,
 
   create: function (game, xRoot, yRoot, width, height) {
 
-    // -- buildings
-    this.buildingGroup = game.add.group();
-    this.buildingGroup.enableBody = true;
+    // -- add background
+    this.sprite = this.rampageGame.game.add.sprite(xRoot,
+                                  yRoot - (height * this.PART_HEIGHT),
+                                  'building');
+    this.sprite.width = width * this.PART_WIDTH;
+    this.sprite.height = height * this.PART_HEIGHT;
+    game.physics.arcade.enable(this.sprite);
 
-    for (var x = 0; x < width; x++) {
-      for (var y = 0; y < height; y++) {
-        var buildingPart = this.buildingGroup.create(xRoot + (this.PART_WIDTH * x),
-                                                     yRoot - (this.PART_HEIGHT * (y + 1)),
-                                                     'building',
-                                                     y == 0 ? 2 : 1);
-        buildingPart.width = this.PART_WIDTH;
-        buildingPart.height = this.PART_HEIGHT;
-        buildingPart.body.gravity.y = 200;
-      }
-    }
-    game.physics.arcade.enable(this.buildingGroup);
+    // -- add roof
+    this.roof = this.rampageGame.game.add.sprite(
+                                         this.sprite.x,
+                                         this.sprite.y - this.ROOF_HEIGHT,
+                                         'building');
+    this.roof.width = this.sprite.width;
+    this.roof.height = this.ROOF_HEIGHT;
+    game.physics.arcade.enable(this.roof);
+    this.roof.body.immovable = true;
+
   },
   update: function (game, platforms) {
     if (this.hitPoints > 0) {
-      game.physics.arcade.collide(this.buildingGroup, platforms);
+      game.physics.arcade.collide(this.sprite, platforms);
     }
-    game.physics.arcade.collide(this.buildingGroup, this.buildingGroup);
   },
   onStrike: function () {
     this.hitPoints = Math.max(this.hitPoints - 1, 0);
@@ -43,7 +49,7 @@ Rampage.Building.prototype = {
 };
 
 Rampage.Building.preload = function (game) {
-  game.load.spritesheet('building', 'assets/building.png', 64, 64, 2);
+  game.load.spritesheet('building', 'assets/building.png', 64, 64, 3);
 };
 Rampage.Bullet = function (game, source, target) {
   this.hitPoints = 1;
@@ -83,6 +89,7 @@ Rampage.Player = function (rampageGame) {
   this.isJumping = false;
   this.isStriking = false;
   this.isClimbing = false;
+  this.isOnRoof = false;
   this.isBuildingSnapped = false;
   this.hitPoints = 10;
   this.state = 'none';
@@ -95,6 +102,7 @@ Rampage.Player.prototype = {
 
   state: 'none',
   isJumping: false,
+  isOnRoof: false,
   isClimbing: false,
   isStriking: false,
   isBuildingSnapped: false,
@@ -110,7 +118,7 @@ Rampage.Player.prototype = {
     this.isStriking = true;
     var hitBuilding = false;
     for (var i = 0; i < buildings.length; i++) {
-      game.physics.arcade.overlap(this.strikePoint, buildings[i].buildingGroup, function (strikePoint, building) {
+      game.physics.arcade.overlap(this.strikePoint, buildings[i].sprite, function (strikePoint, building) {
         hitBuilding = true;
         buildings[i].onStrike();
       }, null, this);
@@ -187,7 +195,7 @@ Rampage.Player.prototype = {
    **/
   jumping: function () {
 
-    if (this.isOnRoof() || this.sprite.body.touching.down) {
+    if (this.sprite.body.touching.down) {
       this.state = (Math.abs(this.sprite.body.velocity.x) > 0) ? 'moving' : 'none';
       return;
     }
@@ -208,32 +216,31 @@ Rampage.Player.prototype = {
   },
   /**
    * @state : moving
-   * TODO : check if touching roof, stopGravity
    * TODO : can move left/right
    * TODO : can jump
    */
   moving: function () {
 
-    this.sprite.body.allowGravity = !this.isOnRoof();
-
-    if (this.rampageGame.cursors.spacebar.isDown) {
-      this.strike(this.rampageGame.game, this.rampageGame.buildings);
-    }
     if (this.rampageGame.cursors.left.isDown) {
       this.move(-10, true);
     }
     else if (this.rampageGame.cursors.right.isDown) {
       this.move(10, true);
     }
-    else if(Math.abs(this.sprite.body.velocity.x) != 0){
+    else if (Math.abs(this.sprite.body.velocity.x) != 0) {
       this.sprite.body.velocity.x -= 15 * (Math.abs(this.sprite.body.velocity.x) / this.sprite.body.velocity.x);
     }
     else {
       this.sprite.body.velocity.x = 0;
     }
+
     if (this.rampageGame.cursors.jump.isDown) {
       this.sprite.body.allowGravity = true;
       return this.jump();
+    }
+
+    if (this.rampageGame.cursors.spacebar.isDown) {
+      this.strike(this.rampageGame.game, this.rampageGame.buildings);
     }
 
     if (Math.abs(this.sprite.body.velocity.x) < 10) {
@@ -244,19 +251,12 @@ Rampage.Player.prototype = {
   },
   /**
    * @state : none
-   * TODO : check if touching roof, stopGravity
    * TODO : can move left/right
    * TODO : can strike ahead/down/up
    * TODO : can jump
    * TODO : can climb : must overlap building ladder, only up if on ground, only down if on roof
    */
   none: function () {
-
-    this.sprite.body.allowGravity = !this.isOnRoof();
-
-    if (this.isOnRoof()) {
-      this.sprite.body.velocity.y = 0;
-    }
 
     if (this.rampageGame.cursors.spacebar.isDown) {
       this.strike(this.rampageGame.game, this.rampageGame.buildings);
@@ -276,12 +276,12 @@ Rampage.Player.prototype = {
     }
     if (this.rampageGame.cursors.up.isDown
         && this.getOverlappedBuildings().length > 0
-        && !this.isOnRoof()) {
+        && !this.isOnRoof) {
       this.sprite.body.velocity.y = -300;
       this.state = 'climbing';
       return;
     }
-    if (this.rampageGame.cursors.down.isDown && this.isOnRoof()) {
+    if (this.rampageGame.cursors.down.isDown && this.isOnRoof) {
       this.sprite.body.velocity.y = 300;
       this.state = 'climbing';
       return;
@@ -292,7 +292,7 @@ Rampage.Player.prototype = {
     this.buildingSnappeds = [];
     for (var i = 0; i < this.rampageGame.buildings.length; i++) {
       this.rampageGame.game.physics.arcade.overlap(this.sprite,
-                                                   this.rampageGame.buildings[i].buildingGroup,
+                                                   this.rampageGame.buildings[i].sprite,
                                                    function (player, building) {
                                                      this.buildingSnappeds.push(building);
                                                    }.bind(this),
@@ -301,25 +301,25 @@ Rampage.Player.prototype = {
     }
     return this.buildingSnappeds;
   },
-  isOnRoof: function () {
-    var isOnRoof = false;
-    this.getOverlappedBuildings();
-    if (this.buildingSnappeds.length == 2) {
-      var notOnRoof = true;
-      for (var i = 0; i < this.buildingSnappeds.length; i++) {
-        var SpriteAboveBuildingOffset = (this.sprite.y + this.sprite.height) - this.buildingSnappeds[i].y;
-        if (SpriteAboveBuildingOffset < 5) {
-          notOnRoof = false;
-        }
-      }
-      if (!notOnRoof) {
-        isOnRoof = true;
-      }
-    }
-    return isOnRoof;
-  },
   update: function () {
     this.rampageGame.game.physics.arcade.collide(this.sprite, this.rampageGame.platforms);
+    this.isOnRoof = false;
+    for (var i = 0; i < this.rampageGame.buildings.length; i++) {
+      this.rampageGame.game.physics.arcade.collide(this.sprite,
+                                                   this.rampageGame.buildings[i].roof,
+                                                   function (sprite, roof) {
+                                                     this.isOnRoof = roof;
+                                                   }.bind(this),
+                                                   function (sprite, roof) {
+                                                     var collide = sprite.body.velocity.y > 0;
+                                                     collide = collide && (sprite.bottom < roof.bottom);
+                                                     collide = collide && this.state != 'climbing';
+                                                     return collide;
+                                                   }.bind(this));
+      if (this.isOnRoof) {
+        break;
+      }
+    }
     this.rampageGame.game.debug.body(this.sprite);
     this.strikePoint.x = this.sprite.x + 35;
     this.strikePoint.y = this.sprite.y + 55;
@@ -572,7 +572,7 @@ Rampage.Game.prototype = {
     this.players.push(player);
   },
   addBuilding: function(x, height){
-    var building = new Rampage.Building(1);
+    var building = new Rampage.Building(this, 1);
     building.create(this.game, x, this.game.world.height - 64, 2, height);
     this.buildings.push(building);
   },
