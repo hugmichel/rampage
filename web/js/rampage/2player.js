@@ -1,6 +1,6 @@
 Rampage.Player = function (rampageGame) {
   this.rampageGame = rampageGame;
-  this.isJumping = false;
+  this.isFalling = false;
   this.isStriking = false;
   this.isClimbing = false;
   this.isOnRoof = false;
@@ -15,7 +15,7 @@ Rampage.Player.prototype = {
   strikePoint: null,
 
   state: 'none',
-  isJumping: false,
+  isFalling: false,
   isOnRoof: false,
   isClimbing: false,
   isStriking: false,
@@ -26,7 +26,7 @@ Rampage.Player.prototype = {
   },
   jump: function () {
     this.sprite.body.velocity.y = -350;
-    this.state = 'jumping';
+    this.state = 'falling';
   },
   strike: function (game, buildings) {
     this.isStriking = true;
@@ -114,14 +114,14 @@ Rampage.Player.prototype = {
     }
   },
   /**
-   * @state : jumping
-   * TODO : check if jumping anymore : touch ground or roof => state = "none"
+   * @state : falling
+   * TODO : check if falling anymore : touch ground or roof => state = "none"
    * TODO : can strike
    * TODO : can look up/down/reverse side
-   * TODO : when jumping, x speed is decreasing (can control x speed with inputs but less than on ground)
+   * TODO : when falling, x speed is decreasing (can control x speed with inputs but less than on ground)
    * TODO : can climb : must overlap building ladder, and jump input. Control : if ladder is not behind an other building. x speed set to 0.
    **/
-  jumping: function () {
+  falling: function () {
 
     if (this.sprite.body.touching.down) {
       this.state = (Math.abs(this.sprite.body.velocity.x) > 0) ? 'moving' : 'none';
@@ -187,7 +187,7 @@ Rampage.Player.prototype = {
   none: function () {
 
     if (!this.sprite.body.touching.down) {
-      return this.state = 'jumping';
+      return this.state = 'falling';
     }
 
     if (this.rampageGame.cursors.spacebar.isDown) {
@@ -283,7 +283,7 @@ Rampage.Player.prototype = {
       'none': 'STAND',
       'moving': 'MOVE',
       'climbing': 'CLIMB',
-      'jumping': 'JUMP'
+      'falling': 'JUMP'
     };
     frame += actions[this.state];
 
