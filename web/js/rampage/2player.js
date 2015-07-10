@@ -1,29 +1,43 @@
-Rampage.Player = function () {
-  this.isJumping = false;
+Rampage.Player = function (rampageGame) {
+  this.rampageGame = rampageGame;
+  this.isFalling = false;
   this.isStriking = false;
+  this.isClimbing = false;
   this.isBuildingSnapped = false;
   this.hitPoints = 10;
+  this.state = 'none';
 };
+
+
 Rampage.Player.prototype = {
+  rampageGame: null,
   sprite: null,
   playerGroup: null,
   strikePoint: null,
 
-  isJumping: false,
+  state: 'none',
+  isFalling: false,
+  isClimbing: false,
   isStriking: false,
   isBuildingSnapped: false,
 
-  onBulletHit: function(){
+
+  onBulletHit: function () {
     this.hitPoints--;
   },
+
+
   jump: function () {
     this.sprite.body.velocity.y = -350;
+    this.state = 'falling';
   },
+
+
   strike: function (game, buildings) {
     this.isStriking = true;
     var hitBuilding = false;
     for (var i = 0; i < buildings.length; i++) {
-      game.physics.arcade.overlap(this.strikePoint, buildings[i].buildingGroup, function (strikePoint, building) {
+      game.physics.arcade.overlap(this.strikePoint, buildings[i].sprite, function (strikePoint, building) {
         hitBuilding = true;
         buildings[i].onStrike();
       }, null, this);
@@ -32,11 +46,22 @@ Rampage.Player.prototype = {
       }
     }
   },
-  move: function (direction, scale) {
-    this.sprite.body.velocity.x = direction;
-    this.sprite.animations.play('move');
-    this.sprite.scale.x = scale;
+
+
+  move: function (xSpeed, isRelative) {
+    if (isRelative) {
+      this.sprite.body.velocity.x += xSpeed;
+    }
+    else {
+      this.sprite.body.velocity.x = xSpeed;
+    }
+    this.sprite.body.velocity.x = Math.min(this.sprite.body.velocity.x, 300);
+    this.sprite.body.velocity.x = Math.max(this.sprite.body.velocity.x, -300);
+
+    this.sprite.scale.x = Math.abs(xSpeed) / xSpeed;
   },
+
+
   create: function (game, x, y) {
     this.sprite = game.add.sprite(x, y, 'george');
     this.sprite.anchor.x = 0.5;
@@ -52,99 +77,248 @@ Rampage.Player.prototype = {
     this.playerGroup.enableBody = true;
     this.strikePoint = this.playerGroup.create(x + 80, y - 80, 'star');
   },
-  update: function (game, cursors, buildings, platforms) {
-    game.physics.arcade.collide(this.sprite, platforms);
-    game.debug.body(this.sprite);
+
+
+  /**
+   * @state : climbing
+   * TODO : check if climbing
+   * TODO : gravity disabled
+   * TODO : can move up/down
+   * TODO : can strike 4 ways
+   * TODO : can jump "out"
+   */
+  climbing: function () {
+    this.sprite.body.allowGravity = false;
+    this.sprite.body.velocity.y = 0;
+
+    if (this.rampageGame.cursors.up.isDown) {
+      this.sprite.body.velocity.y = -300;
+    }
+    else if (this.rampageGame.cursors.down.isDown) {
+      this.sprite.body.velocity.y = 300;
+    }
+    if (this.rampageGame.cursors.spacebar.isDown) {
+      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+    }
+    if (this.sprite.body.touching.down || this.getSnappableLadders().length == 0) {
+      this.sprite.body.allowGravity = true;
+      return this.state = 'none';
+    }
+    var isSnappedYet = false;
+    var snappedLadders = this.getSnappableLadders();
+    for (var i = 0; i < snappedLadders.length; i++) {
+      if (snappedLadders[i] == this.snappedLadder) {
+        isSnappedYet = true;
+        break;
+      }
+    }
+    if (!isSnappedYet) {
+      this.snappedLadder = null;
+      this.sprite.body.allowGravity = true;
+      return this.state = 'none';
+    }
+
+    if (this.rampageGame.cursors.jump.isDown) {
+      this.sprite.body.allowGravity = true;
+      return this.jump();
+    }
+  },
+
+
+  /**
+   * @state : falling
+   * TODO : check if falling anymore : touch ground or roof => state = "none"
+   * TODO : can strike
+   * TODO : can look up/down/reverse side
+   * TODO : when falling, x speed is decreasing (can control x speed with inputs but less than on ground)
+   * TODO : can climb : must overlap building ladder, and jump input. Control : if ladder is not behind an other building. x speed set to 0.
+   **/
+  falling: function () {
+
+
+    if (this.sprite.body.touching.down) {
+      this.state = (Math.abs(this.sprite.body.velocity.x) > 0) ? 'moving' : 'none';
+      return;
+    }
+
+    if (this.rampageGame.cursors.left.isDown) {
+      return this.move(-20, true);
+    }
+    else if (this.rampageGame.cursors.right.isDown) {
+      this.move(20, true);
+    }
+    if (this.rampageGame.cursors.spacebar.isDown) {
+      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+    }
+    //if (this.rampageGame.cursors.jump.isDown && this.getSnappableLadders().length > 0) {
+    //  this.sprite.body.velocity.y = -300;
+    //  this.state = 'climbing';
+    //}
+  },
+
+
+  /**
+   * @state : moving
+   * TODO : can move left/right
+   * TODO : can jump
+   */
+  moving: function () {
+
+    if (this.rampageGame.cursors.left.isDown) {
+      this.move(-10, true);
+    }
+    else if (this.rampageGame.cursors.right.isDown) {
+      this.move(10, true);
+    }
+    else if (Math.abs(this.sprite.body.velocity.x) != 0) {
+      this.sprite.body.velocity.x -= 15 * (Math.abs(this.sprite.body.velocity.x) / this.sprite.body.velocity.x);
+    }
+    else {
+      this.sprite.body.velocity.x = 0;
+    }
+
+    if (this.rampageGame.cursors.jump.isDown) {
+      this.sprite.body.allowGravity = true;
+      return this.jump();
+    }
+
+    if (this.rampageGame.cursors.spacebar.isDown) {
+      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+    }
+
+    if (Math.abs(this.sprite.body.velocity.x) < 10) {
+      this.sprite.body.velocity.x = 0;
+      this.state = 'none';
+      return;
+    }
+  },
+
+
+  /**
+   * @state : none
+   * TODO : can move left/right
+   * TODO : can strike ahead/down/up
+   * TODO : can jump
+   * TODO : can climb : must overlap building ladder, only up if on ground, only down if on roof
+   */
+  none: function () {
+
+    if (!this.sprite.body.touching.down) {
+      return this.state = 'falling';
+    }
+
+    if (this.rampageGame.cursors.spacebar.isDown) {
+      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+    }
+    if (this.rampageGame.cursors.left.isDown) {
+      this.move(-10, true);
+      return this.state = 'moving';
+    }
+    if (this.rampageGame.cursors.right.isDown) {
+      this.move(10, true);
+      return this.state = 'moving';
+    }
+    if (this.rampageGame.cursors.jump.isDown) {
+      this.sprite.body.allowGravity = true;
+      return this.jump();
+
+    }
+
+    var snappableLadders = this.getSnappableLadders();
+    if (this.rampageGame.cursors.up.isDown
+        && snappableLadders.length > 0) {
+
+      if (this.buildingRoofCollided) {
+        for (var i = 0; i < snappableLadders.length; i++) {
+          // can up ladder of other building ?
+          if (this.buildingRoofCollided != snappableLadders[i].building) {
+            return this.snapLadder(snappableLadders[i]);
+          }
+        }
+      }
+      else {
+        return this.snapLadder(snappableLadders[0]);
+      }
+    }
+    if (this.rampageGame.cursors.down.isDown
+        && this.buildingRoofCollided
+        && snappableLadders.length > 0) {
+      return this.snapLadder(snappableLadders[0], true);
+    }
+  },
+
+
+  snapLadder: function (ladder, directionBottom) {
+    this.snappedLadder = ladder;
+    if (this.snappedLadder.climbSide == 'left') {
+      this.sprite.scale.x = 1;
+      this.sprite.x = this.snappedLadder.x - 20;
+    }
+    else {
+      this.sprite.scale.x = -1;
+      this.sprite.x = this.snappedLadder.x + 40;
+    }
+
+    this.sprite.body.velocity.y = 100 * (directionBottom ? 1 : -1);
+    return this.state = 'climbing';
+  },
+
+
+  getSnappableLadders: function () {
+    var ladders = [];
+    for (var i = 0; i < this.rampageGame.buildings.length; i++) {
+      for (var y = 0; y < this.rampageGame.buildings[i].ladders.length; y++) {
+        this.rampageGame.game.physics.arcade.overlap(this.sprite,
+                                                     this.rampageGame.buildings[i].ladders[y],
+                                                     function (player, ladder) {
+                                                       ladders.push(ladder);
+                                                     },
+                                                     null,
+                                                     this);
+      }
+    }
+    return ladders;
+  },
+
+
+  update: function () {
+    this.rampageGame.game.physics.arcade.collide(this.sprite, this.rampageGame.platforms);
+    this.detectBuildingRoofCollided();
+    this.rampageGame.game.debug.body(this.sprite);
     this.strikePoint.x = this.sprite.x + 35;
     this.strikePoint.y = this.sprite.y + 55;
 
-    this.isBuildingSnapped = false;
     this.isStriking = false;
-    this.isJumping = false;
-    this.buildingSnappeds = [];
-    for (var i = 0; i < buildings.length; i++) {
-      game.physics.arcade.overlap(this.sprite, buildings[i].buildingGroup, this.playerSnapBuilding, null, this);
-    }
+    this[this.state]();
 
-    this.sprite.body.velocity.x = 0;
-    this.sprite.body.allowGravity = true;
+    var frame = '';
 
-    if (cursors.left.isDown) {
-      this.move(-300, -1);
-    }
-    else if (cursors.right.isDown) {
-      this.move(300, 1);
-    }
+    var actions = {
+      'none': 'STAND',
+      'moving': 'MOVE',
+      'climbing': 'CLIMB',
+      'falling': 'JUMP'
+    };
+    frame += actions[this.state];
 
-    if (cursors.spacebar.isDown) {
-      this.strike(game, buildings);
-    }
-
-    var action = 'STAND';
-    var lookDirection = 'SIDE';
-
-    var controlMode = 'ground';
-    var isOnRoof = false;
-
-    if (this.buildingSnappeds.length == 2) {
-      var notOnRoof = true;
-      for (var i = 0; i < this.buildingSnappeds.length; i++) {
-        var SpriteAboveBuildingOffset = (this.sprite.y + this.sprite.height) - this.buildingSnappeds[i].y;
-        if (SpriteAboveBuildingOffset < 5) {
-          notOnRoof = false;
-        }
+    if (this.state != 'moving') {
+      var lookDirection = 'SIDE';
+      if (this.rampageGame.cursors.down.isDown) {
+        lookDirection = 'DOWN';
       }
-      if (!notOnRoof) {
-        isOnRoof = true;
+      else if (this.rampageGame.cursors.up.isDown) {
+        lookDirection = 'UP';
       }
+      frame += '_' + lookDirection;
     }
-
-    if (this.isBuildingSnapped) {
-      controlMode = 'buildingSnapped';
-    }
-    if (controlMode == 'buildingSnapped' || isOnRoof) {
-      this.sprite.body.allowGravity = false;
-      this.sprite.body.velocity.y = 0;
-      if (cursors.up.isDown && !isOnRoof) {
-        this.sprite.body.velocity.y = -300;
-      }
-      else if (cursors.down.isDown) {
-        this.sprite.body.velocity.y = 300;
-      }
-      action = 'CLIMB';
-      if (isOnRoof) {
-        action = 'STAND';
-        controlMode = 'ground';
-      }
-    }
-
-    if (controlMode == 'ground') {
-      // Allow the this.sprite to jump if they are touching the ground
-      // or when they are on building roof.
-      if (cursors.jump.isDown && (this.sprite.body.touching.down || isOnRoof)) {
-        this.jump();
-      }
-      if (!this.sprite.body.touching.down && !isOnRoof) {
-        action = 'JUMP';
-      }
-    }
-
-    if (cursors.down.isDown) {
-      lookDirection = 'DOWN';
-    }
-    else if (cursors.up.isDown) {
-      lookDirection = 'UP';
-    }
-
-    var frame = action + '_' + lookDirection;
     if (this.isStriking) {
       frame += '_STRIKE';
     }
-    if (frame == 'STAND_SIDE' && this.sprite.body.velocity.x != 0) {
-      frame = 'MOVE';
-    }
     this.frame(Rampage.Player.spritesheetMap[frame]);
+    console.log(this.state, frame);
   },
+
+
   frame: function (frame) {
     if (frame == Rampage.Player.spritesheetMap.MOVE) {
       this.sprite.animations.play('move');
@@ -160,9 +334,26 @@ Rampage.Player.prototype = {
       this.sprite.frame = frame;
     }
   },
-  playerSnapBuilding: function (player, building) {
-    this.isBuildingSnapped = true;
-    this.buildingSnappeds.push(building);
+
+
+  detectBuildingRoofCollided: function () {
+    this.buildingRoofCollided = null;
+    for (var i = 0; i < this.rampageGame.buildings.length; i++) {
+      // TODO : do not collide destroyed building
+      this.rampageGame.game.physics.arcade.collide(this.sprite,
+                                                   this.rampageGame.buildings[i].roof,
+                                                   function (sprite, roof) {
+                                                     this.buildingRoofCollided = this.rampageGame.buildings[i];
+                                                   }.bind(this),
+                                                   function (sprite, roof) {
+                                                     return sprite.body.velocity.y > 0
+                                                         && (sprite.bottom < roof.bottom)
+                                                         && this.state != 'climbing';
+                                                   }.bind(this));
+      if (this.buildingRoofCollided) {
+        break;
+      }
+    }
   }
 };
 

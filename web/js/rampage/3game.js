@@ -12,6 +12,7 @@ Rampage.Game = function (width, height) {
                                enableDebug: true
                              });
 };
+
 Rampage.Game.prototype = {
   game: null,
 
@@ -55,7 +56,7 @@ Rampage.Game.prototype = {
 
 
     for(var i =0; i<3;  i++) {
-      this.addBuilding(100 + i*200, 2 + i);
+      this.addBuilding(100 + i*200, 2 + (2 - i));
     }
     for (var i = 0; i < 1; i++) {
       this.addSoldier(400 + i * 100);
@@ -77,12 +78,12 @@ Rampage.Game.prototype = {
     }
   },
   addPlayer: function(x){
-    var player = new Rampage.Player();
+    var player = new Rampage.Player(this);
     player.create(this.game, x, this.game.world.height - 200);
     this.players.push(player);
   },
   addBuilding: function(x, height){
-    var building = new Rampage.Building(1);
+    var building = new Rampage.Building(this, 1);
     building.create(this.game, x, this.game.world.height - 64, 2, height);
     this.buildings.push(building);
   },
