@@ -47,6 +47,7 @@ Rampage.Building.prototype = {
     game.physics.arcade.enable(this.ladders[0]);
     this.ladders[0].body.immovable = true;
     this.ladders[0].climbSide = 'left';
+    this.ladders[0].building = this;
 
     this.ladders[1] = this.rampageGame.game.add.sprite(this.sprite.right - this.LADDER_WIDTH,
                                                        this.sprite.y - this.ROOF_HEIGHT - 1,
@@ -56,6 +57,7 @@ Rampage.Building.prototype = {
     game.physics.arcade.enable(this.ladders[1]);
     this.ladders[1].body.immovable = true;
     this.ladders[1].climbSide = 'right';
+    this.ladders[1].building = this;
   },
   update: function (game, platforms) {
     if (this.hitPoints > 0) {
