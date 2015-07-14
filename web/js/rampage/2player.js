@@ -256,7 +256,7 @@ Rampage.Player.prototype = {
     }
     else {
       this.sprite.scale.x = -1;
-      this.sprite.x = this.snappedLadder.x + 40;
+      this.sprite.x = this.snappedLadder.x + 37;
     }
 
     this.sprite.body.velocity.y = 100 * (directionBottom ? 1 : -1);
@@ -315,7 +315,6 @@ Rampage.Player.prototype = {
       frame += '_STRIKE';
     }
     this.frame(Rampage.Player.spritesheetMap[frame]);
-    console.log(this.state, frame);
   },
 
 
