@@ -30,13 +30,7 @@ Rampage.Building.prototype = {
     game.physics.arcade.enable(this.sprite);
 
     // -- add roof
-    this.roof = this.rampageGame.game.add.sprite(this.sprite.x,
-                                                 this.sprite.y - this.ROOF_HEIGHT,
-                                                 'roof');
-    this.roof.width = this.sprite.width;
-    this.roof.height = this.ROOF_HEIGHT;
-    game.physics.arcade.enable(this.roof);
-    this.roof.body.immovable = true;
+
 
     // -- add ladders
     this.ladders = [];
@@ -63,6 +57,22 @@ Rampage.Building.prototype = {
     this.ladders[1].body.immovable = true;
     this.ladders[1].climbSide = 'right';
     this.ladders[1].building = this;
+
+
+    //for(var x = 0; x<width; x++){
+    //for(var y = 0; y<width; y++){
+    //
+    //}
+    //}
+
+    this.facade = this.rampageGame.game.add.tileSprite(xRoot,
+                                                       yRoot - (height * this.PART_HEIGHT),
+                                                       width * this.PART_WIDTH,
+                                                       height * this.PART_HEIGHT,
+                                                       'facade');
+    //game.physics.arcade.enable(this.sprite);
+
+
   },
   update: function (game, platforms) {
     if (this.hitPoints > 0) {
@@ -80,9 +90,10 @@ Rampage.Building.prototype = {
 };
 
 Rampage.Building.preload = function (game) {
-  game.load.image('roof', 'assets/roof.png');
   game.load.image('building', 'assets/building.png');
+  game.load.image('facade', 'assets/facade.png');
   game.load.image('ladder', 'assets/ladder.png');
+  game.load.image('roof', 'assets/roof.png');
 };
 Rampage.Bullet = function (game, source, target) {
   this.hitPoints = 1;
