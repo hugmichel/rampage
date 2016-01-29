@@ -18,9 +18,9 @@ var gulp = require('gulp');
 
 gulp.task('scripts', function() {
   return gulp.src('./web/js/rampage/*.js')
-      .pipe(concat('rampage.js'))
-      .pipe(gulp.dest('./web/js/'))
-      .pipe(notify({ message: 'Scripts task complete' }));
+      .pipe(concat('build.js'))
+      .pipe(gulp.dest('./web/build/'))
+      .pipe(notify({ message: 'Rampage scripts task complete' }));
 });
 
 gulp.task('default', function() {
