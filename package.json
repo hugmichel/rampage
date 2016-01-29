@@ -1,0 +1,35 @@
+{
+  "name": "rampage",
+  "version": "0.1.0",
+  "description": "refonte de rampage en Web App",
+  "main": "gulpfile.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hugmichel/rampage.git"
+  },
+  "keywords": [
+    "rampage",
+    "game",
+    "fun",
+    "js",
+    "canvas"
+  ],
+  "author": "Hugues MICHEL",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hugmichel/rampage/issues"
+  },
+  "homepage": "https://github.com/hugmichel/rampage#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-notify": "^2.2.0"
+  }
+}
