@@ -35,14 +35,28 @@ Rampage.Player.prototype = {
 
   strike: function (game, buildings) {
     this.isStriking = true;
-    var hitBuilding = false;
-    for (var i = 0; i < buildings.length; i++) {
-      game.physics.arcade.overlap(this.strikePoint, buildings[i].sprite, function (strikePoint, building) {
-        hitBuilding = true;
-        buildings[i].onStrike();
-      }, null, this);
-      if (hitBuilding) {
-        break;
+    //var hitBuilding = false;
+    //console.log('strike', buildings);
+    for (var i in buildings) {
+      for (var y in buildings[i].hitAreas) {
+        //console.log(i, buildings[i].hitAreas);
+
+        game.physics.arcade.overlap(
+            this.strikePoint,
+            buildings[i].hitAreas[y],
+            function(){
+
+              return function (strikePoint, building) {
+                console.log('overlap');
+                //hitBuilding = true;
+                buildings[i].onStrike(buildings[i].hitAreas[y]);
+              }
+            }(i, y),
+            null,
+            this);
+        //if (hitBuilding) {
+        //  break;
+        //}
       }
     }
   },
@@ -269,12 +283,12 @@ Rampage.Player.prototype = {
     for (var i = 0; i < this.rampageGame.buildings.length; i++) {
       for (var y = 0; y < this.rampageGame.buildings[i].ladders.length; y++) {
         this.rampageGame.game.physics.arcade.overlap(this.sprite,
-                                                     this.rampageGame.buildings[i].ladders[y],
-                                                     function (player, ladder) {
-                                                       ladders.push(ladder);
-                                                     },
-                                                     null,
-                                                     this);
+            this.rampageGame.buildings[i].ladders[y],
+            function (player, ladder) {
+              ladders.push(ladder);
+            },
+            null,
+            this);
       }
     }
     return ladders;
@@ -340,15 +354,15 @@ Rampage.Player.prototype = {
     for (var i = 0; i < this.rampageGame.buildings.length; i++) {
       // TODO : do not collide destroyed building
       this.rampageGame.game.physics.arcade.collide(this.sprite,
-                                                   this.rampageGame.buildings[i].roof,
-                                                   function (sprite, roof) {
-                                                     this.buildingRoofCollided = this.rampageGame.buildings[i];
-                                                   }.bind(this),
-                                                   function (sprite, roof) {
-                                                     return sprite.body.velocity.y > 0
-                                                         && (sprite.bottom < roof.bottom)
-                                                         && this.state != 'climbing';
-                                                   }.bind(this));
+          this.rampageGame.buildings[i].roof,
+          function (sprite, roof) {
+            this.buildingRoofCollided = this.rampageGame.buildings[i];
+          }.bind(this),
+          function (sprite, roof) {
+            return sprite.body.velocity.y > 0
+                && (sprite.bottom < roof.bottom)
+                && this.state != 'climbing';
+          }.bind(this));
       if (this.buildingRoofCollided) {
         break;
       }

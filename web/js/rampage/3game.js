@@ -83,7 +83,7 @@ Rampage.Game.prototype = {
     this.players.push(player);
   },
   addBuilding: function(x, height){
-    var building = new Rampage.Building(this, 1);
+    var building = new Rampage.Building(this, 10);
     building.create(this.game, x, this.game.world.height - 64, 2, height);
     this.buildings.push(building);
   },
