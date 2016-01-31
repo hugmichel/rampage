@@ -20,7 +20,6 @@ Rampage.Building.prototype = {
   create: function (game, xRoot, yRoot, width, height) {
 
 
-
     /**
      * Create layout reference sprite
      * @type {*|Phaser.TileSprite}
@@ -111,7 +110,6 @@ Rampage.Building.prototype = {
 
 
     this.setHitpoints(this.totalHitPoints);
-
 
   },
   update: function (game, platforms) {

@@ -3,12 +3,15 @@ Rampage.Game = function (width, height) {
   this.soldiers = [];
   this.buildings = [];
   this.bullets = [];
-
+var rampageGame = this;
   this.game = new Phaser.Game(width, height, Phaser.AUTO, '',
                              {
                                preload: this.preload.bind(this),
                                create: this.create.bind(this),
                                update: this.update.bind(this),
+                               render: function(){
+                                 rampageGame.game.debug.cameraInfo(rampageGame.game.camera, 32, 32);
+                               },
                                enableDebug: true
                              });
 };
@@ -67,11 +70,12 @@ Rampage.Game.prototype = {
     for (var i = 0; i < this.buildings.length; i++) {
       this.buildings[i].update(this.game, this.platforms);
     }
-    for (var i = 0; i < this.players.length; i++) {
-      this.players[i].update(this.game, this.cursors, this.buildings, this.platforms);
-    }
     for (var i = 0; i < this.soldiers.length; i++) {
       this.soldiers[i].update(this, this.game, this.platforms, this.players);
+      if (this.soldiers[i].hitPoints < 1){
+        var soldier = this.soldiers.splice(i ,1)[0];
+        soldier.sprite.body.gravity.y = 1000;
+      }
     }
     for (var i = 0; i < this.bullets.length; i++) {
       this.bullets[i].update(this, this.game, this.players);
@@ -82,6 +86,9 @@ Rampage.Game.prototype = {
         building.sprite.body.gravity.y = 1000;
       }
     }
+    for (var i = 0; i < this.players.length; i++) {
+      this.players[i].update(this.game, this.cursors, this.buildings, this.platforms, this.soldiers);
+    }
   },
   addPlayer: function(x){
     var player = new Rampage.Player(this);
@@ -89,13 +96,13 @@ Rampage.Game.prototype = {
     this.players.push(player);
   },
   addBuilding: function(x, height){
-    var building = new Rampage.Building(this, 25);
+    var building = new Rampage.Building(this, 5);
     building.create(this.game, x, this.game.world.height - 64, 2, height);
     this.buildings.push(building);
   },
   addSoldier: function(x){
-    var soldier = new Rampage.Soldier();
-    soldier.create(this.game, x, this.game.world.height - 110);
+    var soldier = new Rampage.Soldier(this, 2);
+    soldier.create(this.game, x, this.game.world.height - 150);
     this.soldiers.push(soldier);
   },
   addBullet: function(source, target){

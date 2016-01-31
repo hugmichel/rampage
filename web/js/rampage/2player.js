@@ -33,38 +33,51 @@ Rampage.Player.prototype = {
   },
 
 
-  strike: function (game, buildings) {
+  strike: function (game, buildings, soldiers) {
     this.isStriking = true;
 
     /**
-     * if snapped to a building :
+     * if snapped to a building, strike building
+     * else (not snapped to a building) : look for a strikable object
      */
     if (this.state == 'climbing' && this.snappedLadder) {
       this.snappedLadder.getBuilding().onStrike(this.strikePoint);
     }
 
     /**
-     * else (not snapped to a building) : look for a strikable object
+     *
      */
-    //var hitBuilding = false;
-    for (var i in buildings) {
-      for (var y in buildings[i].hitAreas) {
-        game.physics.arcade.overlap(
-          this.strikePoint,
-          buildings[i].hitAreas[y],
-          function () {
+    var hasHitSomething = false;
 
-            return function (strikePoint, building) {
-              //hitBuilding = true;
-              buildings[i].onStrike(buildings[i].hitAreas[y]);
-            }
-          }(i, y),
-          null,
-          this);
-        //if (hitBuilding) {
-        //  break;
-        //}
+    for (var i in buildings) {
+      if (hasHitSomething) {
+        break;
       }
+
+      game.physics.arcade.overlap(
+        this.strikePoint,
+        buildings[i].sprite,
+        function (building) {
+          return function (strikePoint, buildingSprite) {
+            hasHitSomething = true;
+            building.onStrike(strikePoint);
+          }
+        }(buildings[i]));
+    }
+
+    for (var i in soldiers) {
+      if (hasHitSomething) {
+        break;
+      }
+      game.physics.arcade.overlap(
+        this.strikePoint,
+        soldiers[i].sprite,
+        function (soldier) {
+          return function (strikePoint, soldierSprite) {
+            hasHitSomething = true;
+            soldier.onStrike(strikePoint);
+          }
+        }(soldiers[i]));
     }
   },
 
@@ -119,7 +132,7 @@ Rampage.Player.prototype = {
       this.sprite.body.velocity.y = 300;
     }
     if (this.rampageGame.cursors.spacebar.isDown && !this.isStriking) {
-      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+      this.strike(this.rampageGame.game, this.rampageGame.buildings, this.rampageGame.soldiers);
     }
     if (this.sprite.body.touching.down || this.getSnappableLadders().length == 0) {
       this.sprite.body.allowGravity = true;
@@ -169,7 +182,7 @@ Rampage.Player.prototype = {
       this.move(20, true);
     }
     if (this.rampageGame.cursors.spacebar.isDown) {
-      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+      this.strike(this.rampageGame.game, this.rampageGame.buildings, this.rampageGame.soldiers);
     }
     //if (this.rampageGame.cursors.jump.isDown && this.getSnappableLadders().length > 0) {
     //  this.sprite.body.velocity.y = -300;
@@ -204,7 +217,7 @@ Rampage.Player.prototype = {
     }
 
     if (this.rampageGame.cursors.spacebar.isDown) {
-      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+      this.strike(this.rampageGame.game, this.rampageGame.buildings, this.rampageGame.soldiers);
     }
 
     if (Math.abs(this.sprite.body.velocity.x) < 10) {
@@ -229,7 +242,7 @@ Rampage.Player.prototype = {
     }
 
     if (this.rampageGame.cursors.spacebar.isDown) {
-      this.strike(this.rampageGame.game, this.rampageGame.buildings);
+      this.strike(this.rampageGame.game, this.rampageGame.buildings, this.rampageGame.soldiers);
     }
     if (this.rampageGame.cursors.left.isDown) {
       this.move(-10, true);
