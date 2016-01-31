@@ -76,6 +76,12 @@ Rampage.Game.prototype = {
     for (var i = 0; i < this.bullets.length; i++) {
       this.bullets[i].update(this, this.game, this.players);
     }
+    for (var i = 0; i < this.buildings.length; i++) {
+      if (this.buildings[i].hitPoints < 1){
+        var building = this.buildings.splice(i ,1)[0];
+        building.sprite.body.gravity.y = 1000;
+      }
+    }
   },
   addPlayer: function(x){
     var player = new Rampage.Player(this);
@@ -83,7 +89,7 @@ Rampage.Game.prototype = {
     this.players.push(player);
   },
   addBuilding: function(x, height){
-    var building = new Rampage.Building(this, 10);
+    var building = new Rampage.Building(this, 25);
     building.create(this.game, x, this.game.world.height - 64, 2, height);
     this.buildings.push(building);
   },

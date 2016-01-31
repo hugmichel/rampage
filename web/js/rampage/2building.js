@@ -1,8 +1,7 @@
 Rampage.Building = function (rampageGame, totalHitPoints) {
   this.totalHitPoints = totalHitPoints | 0;
-  this.hitPoints = this.totalHitPoints;
   this.rampageGame = rampageGame;
-  this.roof = rampageGame;
+  this.ladders = [];
 };
 Rampage.Building.prototype = {
   hitAreas: null,
@@ -20,92 +19,137 @@ Rampage.Building.prototype = {
 
   create: function (game, xRoot, yRoot, width, height) {
 
-    // -- add background
-    this.sprite = this.rampageGame.game.add.tileSprite(xRoot,
-                                                   yRoot - (height * this.PART_HEIGHT),
-                                                   width * this.PART_WIDTH,
-                                                   height * this.PART_HEIGHT,
-                                                   'hitarea');
-    game.physics.arcade.enable(this.sprite);
 
-    // -- add roof
-    this.roof = this.rampageGame.game.add.sprite(this.sprite.x,
-        this.sprite.y - this.ROOF_HEIGHT,
-        'roof');
-    this.roof.width = this.sprite.width;
-    this.roof.height = this.ROOF_HEIGHT;
-    game.physics.arcade.enable(this.roof);
-    this.roof.body.immovable = true;
+
+    /**
+     * Create layout reference sprite
+     * @type {*|Phaser.TileSprite}
+     */
+    this.sprite = this.rampageGame.game.add.tileSprite(xRoot,
+      yRoot - (height * this.PART_HEIGHT),
+      width * this.PART_WIDTH,
+      height * this.PART_HEIGHT,
+      'hitarea');
+    this.sprite.alpha = 1;
+
 
     // -- add ladders
-    this.ladders = [];
-    this.ladders[0] = this.rampageGame.game.add.tileSprite(this.sprite.x,
-        this.sprite.y - this.ROOF_HEIGHT - 1,
-        this.LADDER_WIDTH,
-        this.sprite.height + this.ROOF_HEIGHT + 1,
-        'ladder');
-    game.physics.arcade.enable(this.ladders[0]);
+    var getBuilding = function () {
+      return this.building;
+    };
+
+    /**
+     * Create left Ladder
+     * @type {*|Phaser.TileSprite}
+     */
+    this.ladders[0] = this.rampageGame.game.add.tileSprite(0,
+      0 - this.ROOF_HEIGHT - 1,
+      this.LADDER_WIDTH,
+      this.sprite.height + this.ROOF_HEIGHT + 1,
+      'ladder');
     this.ladders[0].tileScale.y = this.ladders[0].tileScale.x = this.LADDER_WIDTH / 32;
-    this.ladders[0].physicsType = Phaser.SPRITE;
-    this.ladders[0].body.immovable = true;
     this.ladders[0].climbSide = 'left';
     this.ladders[0].building = this;
+    this.ladders[0].getBuilding = getBuilding;
 
-    this.ladders[1] = this.rampageGame.game.add.tileSprite(this.sprite.right - this.LADDER_WIDTH,
-        this.sprite.y - this.ROOF_HEIGHT - 1,
-        this.LADDER_WIDTH,
-        this.sprite.height + this.ROOF_HEIGHT + 1,
-        'ladder');
-    game.physics.arcade.enable(this.ladders[1]);
+    /**
+     * Create right Ladder
+     * @type {*|Phaser.TileSprite}
+     */
+    this.ladders[1] = this.rampageGame.game.add.tileSprite(this.sprite.width - this.LADDER_WIDTH,
+      0 - this.ROOF_HEIGHT - 1,
+      this.LADDER_WIDTH,
+      this.sprite.height + this.ROOF_HEIGHT + 1,
+      'ladder');
     this.ladders[1].tileScale.y = this.ladders[1].tileScale.x = this.LADDER_WIDTH / 32;
-    this.ladders[1].physicsType = Phaser.SPRITE;
-    this.ladders[1].body.immovable = true;
     this.ladders[1].climbSide = 'right';
     this.ladders[1].building = this;
+    this.ladders[1].getBuilding = getBuilding;
+
+    /**
+     * Create roof
+     */
+    this.roof = this.rampageGame.game.add.sprite(
+      0, 0 - this.ROOF_HEIGHT,
+      'roof');
+    this.roof.width = this.sprite.width;
+    this.roof.height = this.ROOF_HEIGHT;
+
+    /**
+     * Create facade
+     * @type {*|Phaser.TileSprite}
+     */
+    this.facade = this.rampageGame.game.add.tileSprite(
+      0, 0,
+      width * this.PART_WIDTH,
+      height * this.PART_HEIGHT,
+      'facade',
+      this.group);
 
 
-    this.facade = this.rampageGame.game.add.tileSprite(xRoot,
-        yRoot - (height * this.PART_HEIGHT),
-        width * this.PART_WIDTH,
-        height * this.PART_HEIGHT,
-        'facade');
+    /**
+     * add parts into group
+     */
+    this.sprite.addChild(this.facade);
+    this.sprite.addChild(this.roof);
+    this.sprite.addChild(this.ladders[0]);
+    this.sprite.addChild(this.ladders[1]);
+
+    /**
+     * Enable physics
+     */
+    this.sprite.physicsType = Phaser.SPRITE;
+    game.physics.arcade.enable(this.sprite);
+    game.physics.arcade.enable(this.facade);
+    game.physics.arcade.enable(this.ladders[0]);
+    game.physics.arcade.enable(this.ladders[1]);
+    game.physics.arcade.enable(this.roof);
+    this.ladders[0].physicsType = Phaser.SPRITE;
+    this.ladders[0].body.immovable = true;
+    this.ladders[1].physicsType = Phaser.SPRITE;
+    this.ladders[1].body.immovable = true;
 
 
+    this.setHitpoints(this.totalHitPoints);
 
-    // -- add hitAreas
-    this.hitAreas = [];
-    console.log(arguments);
-    for (var x = 0; x <  width; x++) {
-      for (var y = 0; y < height; y++) {
-        console.log(x, y);
-        var hitArea = this.rampageGame.game.add.sprite(
-            xRoot + (x * this.PART_WIDTH),
-            yRoot - ((height - y) * this.PART_HEIGHT),
-            //this.PART_WIDTH,
-            //this.PART_HEIGHT,
-            'building');
-        game.physics.arcade.enable(hitArea);
-        hitArea.hitPoints = this.hitPoints;
-        hitArea.alpha = 0;
-        this.hitAreas.push(hitArea);
-      }
-    }
 
   },
   update: function (game, platforms) {
-    if (this.hitPoints > 0) {
-      game.physics.arcade.collide(this.sprite, platforms);
-    }
-    for (var i = 0; i < this.ladders.length; i++) {
-      //game.debug.body(this.ladders[i]);
-    }
 
   },
-  onStrike: function (hitArea) {
-    console.log('onStrike', hitArea, hitArea.hitPoints, this.totalHitPoints);
-    hitArea.hitPoints = Math.max(hitArea.hitPoints - 1, 0);
-    //hitArea.tint = 0xFFFFFF * (hitArea.hitPoints / this.totalHitPoints);
-    hitArea.alpha = 1 - (hitArea.hitPoints / this.totalHitPoints);
+  onStrike: function (strikePoint) {
+
+    var pixels = [];
+    for (var y = 0; y < 50; y++) {
+      for (var x = 0; x < 50; x++) {
+        pixels.push([x, y]);
+      }
+    }
+
+    var temp = pixels.slice(0);
+
+    Phaser.ArrayUtils.shuffle(temp);
+
+    var bmd = this.rampageGame.game.make.bitmapData(50, 50);
+    for (var i = 0; i < 1024; i++) {
+      var xy = temp.pop();
+      bmd.rect(
+        0 + xy[0],
+        0 + xy[1],
+        1,
+        1,
+        'rgb(0,0,0)'
+      );
+    }
+
+    var hitareaSprite = this.rampageGame.game.add.sprite(strikePoint.x - this.sprite.x, strikePoint.y - this.sprite.y, bmd);
+    this.sprite.addChild(hitareaSprite);
+    this.setHitpoints(Math.max(this.hitPoints - 1, 0));
+
+  },
+
+  setHitpoints: function (hitPoints) {
+    this.hitPoints = hitPoints;
   }
 };
 
